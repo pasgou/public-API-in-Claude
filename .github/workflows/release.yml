@@ -17,6 +17,10 @@ on:
         description: "Marquer comme dernière version"
         type: boolean
         default: true
+      replace:
+        description: "Supprimer d'abord la release et le tag existants (republication)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -64,6 +68,9 @@ jobs:
           V=${{ steps.prep.outputs.version }}
           LATEST="--latest"
           [ "${{ inputs.latest }}" = "false" ] && LATEST="--latest=false"
+          if [ "${{ inputs.replace }}" = "true" ] && gh release view "v$V" >/dev/null 2>&1; then
+            gh release delete "v$V" --cleanup-tag --yes
+          fi
           if gh release view "v$V" >/dev/null 2>&1; then
             gh release upload "v$V" dist/api-publiques-fr-$V.mcpb* --clobber
           else
