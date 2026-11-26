@@ -29,10 +29,13 @@ Points d'accès PISTE (annexe 12.2 du guide) : production `https://api.piste.gou
 | 2 | Recherche d'entreprises | Limite par ASN signalée comme « probable sur les clouds publics » | 429 observés depuis un conteneur cloud | 4 tentatives, respect de `Retry-After` (plafonné à 10 s) |
 | 3 | BOFiP | Le champ `contenu` est présenté comme le texte | Les numéros de paragraphe y sont collés au texte (« 10À ce titre »), ce qui fausse les citations de § | Texte reconstruit depuis `contenu_html`, paragraphes marqués « § n » |
 | 4 | Sirene | Page « Comment interroger » de l'API V4 | La V4 est en bêta depuis le 13/10/2026, officielle mi-2027 ; la 3.11 reste maintenue jusqu'à mi-2028 | 3.11 retenue |
+| 5 | PISTE | Le guide utilisateur PISTE ne précise pas l'ordre CGU / souscription | Tant que les CGU d'une API ne sont pas acceptées, sa case reste grisée dans l'application et la souscription n'est pas enregistrée, sans message d'erreur ; l'appel renvoie alors 403 | Accepter les CGU (page de consentement) puis cocher les API dans « Modifier l'application » ; contrôler « API Souscrites » (constat utilisateur, 26/11/2026) |
+| 6 | BOFiP | — | La recherche `search()` d'Opendatasoft ne trie pas par pertinence : la publication attendue peut être hors des premiers résultats | Reclassement local des 100 premiers résultats (mots du titre, Contenu avant Actualité) |
 
-## Points non vérifiables sans identifiants (à tester dès réception des clés)
+## Recette avec identifiants (26/11/2026)
 
-- Légifrance : valeur de tri `PERTINENCE` utilisée par défaut dans `legifrance_rechercher` (le swagger ne donne que l'exemple `SIGNATURE_DATE_DESC`).
+Recette utilisateur concluante sur les six modules (requêtes de test : `GUIDE_UTILISATEUR.md`, section « Vérifier l'installation »).
+
+Restent non couverts par cette recette :
 - Légifrance : consultation des identifiants `CETATEXT` / `CONSTEXT` via `/consult/juri` (le swagger ne documente que `JURITEXT`).
-- Légifrance / Judilibre : format exact des réponses (le code élague sans présumer de la structure).
-- Sirene : réponses réelles (code écrit sur le swagger 3.11).
+- Légifrance : valeur de tri `PERTINENCE` sur les fonds autres que les codes.

@@ -39,7 +39,7 @@ Omettre les `-e` des modules non souhaités.
 
 **Sirene (INSEE)** — [portail-api.insee.fr](https://portail-api.insee.fr/) : « Connexion pour les externes » → créer un compte (éviter les accents) → créer une application en mode **simple** (pas « backend to backend ») → Catalogue → API Sirene → Souscrire, plan **Public** → la clé apparaît dans l'onglet Souscriptions de l'application. Pas d'expiration.
 
-**PISTE (Légifrance, Judilibre)** — [piste.gouv.fr](https://piste.gouv.fr/) : créer un compte → une application SANDBOX est créée automatiquement ; pour la production, créer une application → demander l'accès aux API « Légifrance » et « JUDILIBRE » (acceptation des CGU de chaque API) → récupérer Client ID et Client Secret OAuth. Des identifiants SANDBOX ne fonctionnent qu'avec la case/variable bac à sable.
+**PISTE (Légifrance, Judilibre)** — [piste.gouv.fr](https://piste.gouv.fr/) : créer une application en environnement **PRODUCTION**, accepter les CGU de Légifrance et JUDILIBRE **avant** de les sélectionner dans l'application (sinon la case reste grisée et la souscription n'est pas enregistrée, sans message d'erreur), puis vérifier la rubrique « API Souscrites ». Procédure détaillée : [docs/GUIDE_UTILISATEUR.md](docs/GUIDE_UTILISATEUR.md).
 
 ## Variables d'environnement
 
@@ -70,7 +70,7 @@ npm run pack:mcpb
 
 Choix techniques : TypeScript, SDK MCP v2 (`@modelcontextprotocol/server`), transport stdio ; réponses en JSON compact élagué (valeurs vides retirées, HTML converti en texte, textes longs par fenêtres de 20 000 caractères avec paramètre `debut`) ; 4 tentatives avec attente exponentielle sur erreurs réseau, 429 (`Retry-After` respecté) et 502–504.
 
-Sources documentaires et écarts constatés : [docs/SOURCES.md](docs/SOURCES.md). Feuille de route : [docs/ROADMAP.md](docs/ROADMAP.md).
+Guide utilisateur (configuration, tests de recette, dépannage) : [docs/GUIDE_UTILISATEUR.md](docs/GUIDE_UTILISATEUR.md). Sources documentaires et écarts constatés : [docs/SOURCES.md](docs/SOURCES.md). Feuille de route : [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Avertissements
 

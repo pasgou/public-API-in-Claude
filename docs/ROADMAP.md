@@ -8,7 +8,7 @@
 
 ## À faire
 
-1. **Recette avec identifiants réels** INSEE et PISTE : lever les points listés dans `SOURCES.md`, ajuster les projections de réponses.
+1. **Recette complémentaire** : identifiants CETATEXT/CONSTEXT, tri PERTINENCE hors codes (voir `SOURCES.md`).
 2. **Version distante (Streamable HTTP)** pour Cowork / claude.ai (connecteur personnalisé) : hébergement, authentification OAuth du connecteur, identifiants PISTE/INSEE côté serveur ou par utilisateur.
 3. **Interface graphique de connexion** pour la version distante (page de configuration des clés et test de connexion par module), sur le modèle des projets précédents.
 4. **Sirene V4** quand elle deviendra la version officielle (mi-2027 annoncé).

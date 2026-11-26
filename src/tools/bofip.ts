@@ -18,6 +18,8 @@ function bofipText(html: string): string {
     .replace(/<li[^>]*>/g, "\n- ");
   return stripHtml(marked);
 }
+const norm = (t: string) =>
+  t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 const quote = (s: string) => `"${s.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
 
 export function registerBofip(server: McpServer) {
@@ -44,13 +46,27 @@ export function registerBofip(server: McpServer) {
       if (a.serie) where.push(`serie=${quote(a.serie)}`);
       if (a.division) where.push(`division=${quote(a.division)}`);
       if (a.type) where.push(`type=${quote(a.type)}`);
-      const d = await request<{ total_count: number; results: unknown[] }>(BASE, {
+      // L'API renvoie les résultats sans tri par pertinence : on reclasse les 100 premiers selon la présence
+      // des mots recherchés dans le titre (puis Contenu avant Actualité), et on pagine localement dans cette fenêtre.
+      const fenetre = a.decalage < 100;
+      const d = await request<{ total_count: number; results: Array<Record<string, string>> }>(BASE, {
         service: SERVICE,
-        query: { select: META, where: where.join(" AND "), limit: a.limite, offset: a.decalage },
+        query: { select: META, where: where.join(" AND "), limit: fenetre ? 100 : a.limite, offset: fenetre ? 0 : a.decalage },
         signal: ctx.mcpReq.signal,
       });
-      const fin = a.decalage + d.results.length;
-      return json(prune({ total: d.total_count, resultats: d.results, ...(fin < d.total_count ? { suite: `Rappeler avec decalage=${fin}` } : {}) }));
+      let results = d.results;
+      if (fenetre) {
+        const mots = norm(a.texte).split(" ").filter((m) => m.length > 2);
+        const score = (r: Record<string, string>) =>
+          mots.filter((m) => norm(r.titre ?? "").includes(m)).length * 2 + (r.type === "Contenu" ? 1 : 0);
+        results = results
+          .map((r, i) => ({ r, i, s: score(r) }))
+          .sort((x, y) => y.s - x.s || x.i - y.i)
+          .map((x) => x.r)
+          .slice(a.decalage, a.decalage + a.limite);
+      }
+      const fin = a.decalage + results.length;
+      return json(prune({ total: d.total_count, resultats: results, ...(fin < d.total_count ? { suite: `Rappeler avec decalage=${fin}` } : {}) }));
     },
   );
 
