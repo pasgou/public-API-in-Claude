@@ -1,0 +1,35 @@
+{
+  "name": "api-publiques-fr-mcp-server",
+  "version": "0.1.0",
+  "description": "Serveur MCP donnant à Claude l'accès aux API publiques françaises : Recherche d'entreprises, Sirene (INSEE), Légifrance et Judilibre (PISTE), BOFiP-Impôts, data.gouv.fr.",
+  "type": "module",
+  "bin": {
+    "api-publiques-fr-mcp-server": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "smoke": "tsx scripts/smoke.ts",
+    "pack:mcpb": "bash scripts/build-mcpb.sh"
+  },
+  "engines": {
+    "node": ">=20.3"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/server": "^2.4.0",
+    "zod": "^4.2.0"
+  },
+  "devDependencies": {
+    "@anthropic-ai/mcpb": "^2.1.2",
+    "@modelcontextprotocol/client": "^2.4.0",
+    "@types/node": "^22.0.0",
+    "esbuild": "^0.28.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.3"
+  }
+}

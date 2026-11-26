@@ -1,0 +1,169 @@
+{
+  "manifest_version": "0.3",
+  "name": "api-publiques-fr",
+  "display_name": "API publiques françaises",
+  "version": "0.1.0",
+  "description": "Annuaire des entreprises, Sirene, Légifrance, Judilibre, BOFiP et data.gouv.fr dans Claude.",
+  "long_description": "Connecte Claude aux API des administrations françaises.\n\n**Sans clé** : Recherche d'entreprises (DINUM), BOFiP-Impôts en vigueur (DGFiP), catalogue et API tabulaire data.gouv.fr.\n\n**Avec clé** : Sirene 3.11 (clé INSEE, portail-api.insee.fr) ; Légifrance et Judilibre (identifiants OAuth d'une application PISTE, piste.gouv.fr).\n\nLes champs laissés vides désactivent simplement le module correspondant. Outil projet indépendant, non édité par les administrations concernées.",
+  "author": {
+    "name": "Contributeurs api-publiques-fr"
+  },
+  "license": "MIT",
+  "icon": "icon.png",
+  "keywords": [
+    "sirene",
+    "legifrance",
+    "judilibre",
+    "bofip",
+    "data.gouv",
+    "entreprises",
+    "france"
+  ],
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/server/index.js"
+      ],
+      "env": {
+        "INSEE_API_KEY": "${user_config.insee_api_key}",
+        "PISTE_CLIENT_ID": "${user_config.piste_client_id}",
+        "PISTE_CLIENT_SECRET": "${user_config.piste_client_secret}",
+        "PISTE_ENV": "${user_config.piste_sandbox}"
+      }
+    }
+  },
+  "user_config": {
+    "insee_api_key": {
+      "type": "string",
+      "title": "Clé API Sirene (INSEE)",
+      "description": "Facultatif. portail-api.insee.fr → application « simple » → souscription « API Sirene », plan Public → clé.",
+      "sensitive": true,
+      "required": false
+    },
+    "piste_client_id": {
+      "type": "string",
+      "title": "PISTE – Client ID",
+      "description": "Facultatif. Application piste.gouv.fr ayant accès à Légifrance et/ou Judilibre (CGU acceptées).",
+      "sensitive": false,
+      "required": false
+    },
+    "piste_client_secret": {
+      "type": "string",
+      "title": "PISTE – Client Secret",
+      "description": "Facultatif. Secret OAuth de la même application PISTE.",
+      "sensitive": true,
+      "required": false
+    },
+    "piste_sandbox": {
+      "type": "boolean",
+      "title": "PISTE en bac à sable",
+      "description": "Cocher pour utiliser les identifiants de l'environnement SANDBOX de PISTE.",
+      "default": false,
+      "required": false
+    }
+  },
+  "tools": [
+    {
+      "name": "apis_publiques_statut",
+      "description": "État des modules et procédure d'obtention des clés"
+    },
+    {
+      "name": "entreprises_rechercher",
+      "description": "Recherche d'entreprises (nom, adresse, dirigeant, SIREN/SIRET, filtres)"
+    },
+    {
+      "name": "entreprises_autour_point",
+      "description": "Établissements autour d'un point GPS"
+    },
+    {
+      "name": "bofip_rechercher",
+      "description": "Recherche dans la doctrine fiscale BOFiP en vigueur"
+    },
+    {
+      "name": "bofip_document",
+      "description": "Texte d'une publication BOFiP"
+    },
+    {
+      "name": "datagouv_rechercher",
+      "description": "Recherche de jeux de données et d'API sur data.gouv.fr"
+    },
+    {
+      "name": "datagouv_jeu_de_donnees",
+      "description": "Détail d'un jeu de données et de ses ressources"
+    },
+    {
+      "name": "datagouv_donnees_tabulaires",
+      "description": "Lecture filtrée d'un fichier CSV/XLSX de data.gouv.fr"
+    },
+    {
+      "name": "sirene_unite_legale",
+      "description": "Fiche Sirene d'une unité légale (clé INSEE)"
+    },
+    {
+      "name": "sirene_etablissement",
+      "description": "Fiche Sirene d'un établissement (clé INSEE)"
+    },
+    {
+      "name": "sirene_rechercher",
+      "description": "Recherche multicritère Sirene (clé INSEE)"
+    },
+    {
+      "name": "sirene_successions",
+      "description": "Liens de succession d'établissements (clé INSEE)"
+    },
+    {
+      "name": "legifrance_rechercher",
+      "description": "Recherche Légifrance (PISTE)"
+    },
+    {
+      "name": "legifrance_article",
+      "description": "Article de code ou de texte (PISTE)"
+    },
+    {
+      "name": "legifrance_consulter",
+      "description": "Contenu d'un texte Légifrance (PISTE)"
+    },
+    {
+      "name": "legifrance_table_matieres",
+      "description": "Table des matières d'un code (PISTE)"
+    },
+    {
+      "name": "legifrance_lister_codes",
+      "description": "Liste des codes (PISTE)"
+    },
+    {
+      "name": "legifrance_convention_collective",
+      "description": "Convention collective par IDCC (PISTE)"
+    },
+    {
+      "name": "judilibre_rechercher",
+      "description": "Recherche de décisions de justice (PISTE)"
+    },
+    {
+      "name": "judilibre_decision",
+      "description": "Texte intégral d'une décision (PISTE)"
+    },
+    {
+      "name": "judilibre_taxonomie",
+      "description": "Nomenclatures Judilibre (PISTE)"
+    }
+  ],
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "win32",
+      "linux"
+    ],
+    "runtimes": {
+      "node": ">=20.3.0"
+    }
+  },
+  "privacy_policies": [
+    "https://www.data.gouv.fr/pages/legal/cgu",
+    "https://piste.gouv.fr/cgu",
+    "https://portail-api.insee.fr/"
+  ]
+}
