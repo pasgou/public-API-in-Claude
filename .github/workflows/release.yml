@@ -1,0 +1,72 @@
+# Construit le bundle Claude Desktop (.mcpb) et publie la release GitHub correspondante.
+# Déclenchement : poussée d'un tag vX.Y.Z, ou manuel (Actions → Release → Run workflow).
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version à publier, sans « v » (doit correspondre à mcpb/manifest.json du commit construit)"
+        required: true
+      target:
+        description: "Commit à construire (défaut : commit du lancement)"
+        required: false
+      latest:
+        description: "Marquer comme dernière version"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.target || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Construire et tester
+        run: |
+          npm ci
+          npm run build
+          npm run pack:mcpb
+
+      - name: Préparer la release
+        id: prep
+        run: |
+          V="${{ inputs.version || github.ref_name }}"; V="${V#v}"
+          M=$(node -p "require('./mcpb/manifest.json').version")
+          [ "$V" = "$M" ] || { echo "Version $V ≠ manifest $M"; exit 1; }
+          FILE="dist/api-publiques-fr-$V.mcpb"
+          test -f "$FILE"
+          sha256sum "$FILE" | sed 's#dist/##' > "$FILE.sha256"
+          # Notes : section de la version dans le journal du commit de lancement (présent même pour une ancienne cible).
+          git show "${{ github.sha }}:docs/CHANGELOG.md" \
+            | awk -v v="## $V" 'index($0,v)==1{f=1;next} /^## /{f=0} f' > notes.md
+          [ -s notes.md ] || echo "Version $V." > notes.md
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Publier
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V=${{ steps.prep.outputs.version }}
+          LATEST="--latest"
+          [ "${{ inputs.latest }}" = "false" ] && LATEST="--latest=false"
+          if gh release view "v$V" >/dev/null 2>&1; then
+            gh release upload "v$V" dist/api-publiques-fr-$V.mcpb* --clobber
+          else
+            gh release create "v$V" dist/api-publiques-fr-$V.mcpb* \
+              --target "${{ steps.prep.outputs.sha }}" --title "v$V" --notes-file notes.md $LATEST
+          fi

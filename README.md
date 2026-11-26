@@ -17,7 +17,7 @@ Serveur MCP qui donne à Claude un accès direct aux API des administrations fra
 
 ### Claude Desktop (installation graphique)
 
-1. Télécharger `api-publiques-fr-<version>.mcpb` (onglet *Releases* du dépôt, ou `npm run pack:mcpb`).
+1. Télécharger `api-publiques-fr-<version>.mcpb` depuis la [dernière release](../../releases/latest) (ou le construire : `npm run pack:mcpb`).
 2. Double-cliquer sur le fichier, ou Claude Desktop → Paramètres → Extensions → glisser le fichier.
 3. Le formulaire d'installation propose les champs facultatifs : clé Sirene, Client ID / Secret PISTE, case « bac à sable ». Laisser vide = module désactivé. Les champs marqués `sensitive` sont masqués et stockés de façon sécurisée par l'application (spécification MCPB).
 
@@ -108,7 +108,7 @@ npm run e2e:remote
 
 Choix techniques : TypeScript, SDK MCP v2 (`@modelcontextprotocol/server`), transports stdio (local) et Streamable HTTP (distant) ; réponses en JSON compact élagué (valeurs vides retirées, HTML converti en texte, textes longs par fenêtres de 20 000 caractères avec paramètre `debut`) ; 4 tentatives avec attente exponentielle sur erreurs réseau, 429 (`Retry-After` respecté) et 502–504.
 
-Guide utilisateur (configuration, tests de recette, dépannage) : [docs/GUIDE_UTILISATEUR.md](docs/GUIDE_UTILISATEUR.md). Sources documentaires et écarts constatés : [docs/SOURCES.md](docs/SOURCES.md). Feuille de route : [docs/ROADMAP.md](docs/ROADMAP.md).
+Journal des versions : [docs/CHANGELOG.md](docs/CHANGELOG.md). Publication : workflow `Release` (tag `vX.Y.Z` ou lancement manuel). Guide utilisateur (configuration, tests de recette, dépannage) : [docs/GUIDE_UTILISATEUR.md](docs/GUIDE_UTILISATEUR.md). Sources documentaires et écarts constatés : [docs/SOURCES.md](docs/SOURCES.md). Feuille de route : [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Avertissements
 

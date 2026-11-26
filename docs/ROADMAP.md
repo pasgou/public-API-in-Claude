@@ -17,4 +17,4 @@
 3. **Spécification MCP** (modelcontextprotocol.io) à relire à la source : le serveur d'autorisation a été construit d'après la documentation des connecteurs Claude.
 4. **Sirene V4** quand elle deviendra la version officielle (mi-2027 annoncé).
 5. **API supplémentaires** à évaluer : API tabulaire de data.economie.gouv.fr (autres jeux DGFiP), BODACC, RNE (INPI), Base Adresse Nationale, API Entreprise (habilitation requise, réservée aux administrations).
-6. **Publication** : release GitHub avec le `.mcpb` attaché, CI de build.
+6. **Application Mac** (vitrine, skill app-mac-simple) : en attente de la notarisation Apple. **Contrôle de sécurité de l'image Docker** dans la CI.
