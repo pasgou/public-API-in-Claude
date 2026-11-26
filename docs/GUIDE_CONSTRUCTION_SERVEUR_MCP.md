@@ -483,7 +483,7 @@ La terminaison TLS est assurée par l'hébergeur ou un mandataire inverse. Contr
 
 ### 6.2 Déploiement automatisé vers Scaleway Serverless Containers
 
-Workflow `.github/workflows/deploy-scaleway.yml` ; procédure de mise en place dans le `README.md` (« Déploiement automatique sur Scaleway »). Sources citées en tête du workflow : documentation de la CLI Scaleway (`container.md`, `registry.md`), action `scaleway/action-scw`, pages Scaleway sur la poussée d'images, les limites des conteneurs et les domaines personnalisés.
+Workflow `.github/workflows/deploy-scaleway.yml` ; procédure de mise en place dans le `README.md` (« Déploiement automatique sur Scaleway »). Sources citées en tête du workflow : documentation de la CLI Scaleway (`container.md`, `registry.md`), action `scaleway/action-scw`, pages Scaleway sur la poussée d'images, les limites des conteneurs et les domaines personnalisés. Le site de documentation Scaleway refuse les lecteurs automatiques (403) : la documentation a été lue dans les dépôts officiels `scaleway/docs-content` (fichiers `.mdx`), `scaleway/scaleway-cli` (`docs/commands/container.md`, `registry.md`, `cookbook.md`) et `scaleway/action-scw`.
 
 **Déclencheurs** : lancement manuel, ou fin **réussie** du workflow `Release` (`workflow_run`, condition `conclusion == 'success'`). Le code extrait est celui de la release (`workflow_run.head_sha`). `concurrency` sans annulation : deux déploiements ne se chevauchent pas. Droits GitHub : `contents: read`.
 
@@ -608,6 +608,7 @@ Pour `/authorize`, construire l'URL comme dans `scripts/remote-e2e.ts` (client D
 | 13 | Sonde de santé et contrôle `Host` | Les sondes de l'hébergeur appellent l'adresse interne du conteneur : un contrôle `Host` global les rejette | Route `/health` déclarée avant `hostHeaderValidation` | `src/remote/main.ts` |
 | 14 | Alertes de vulnérabilité de l'image | npm embarqué dans l'image de base Node déclenche des alertes sans servir à l'exécution | npm et npx supprimés de l'image finale ; Trivy bloquant sur les vulnérabilités corrigeables | `Dockerfile` ; `.github/workflows/deploy-scaleway.yml` |
 | 15 | Déploiement « réussi » sur l'ancienne image | Un conteneur peut répondre sur `/health` sans avoir pris la nouvelle image | `GIT_SHA` exposé par `/health`, comparé au commit ; redéploiement forcé une fois | `.github/workflows/deploy-scaleway.yml` |
+| 16 | CLI Scaleway : HTTPS seul | L'argument s'écrit `https-connections-only` à la création du conteneur mais `https-connection-only` à la mise à jour | Le workflow ne le passe qu'à la création ; vérifier l'orthographe à chaque nouvel usage | relevé lors de l'écriture du workflow (documentation de la CLI) ; non consigné dans `docs/SOURCES.md` |
 
 ---
 
