@@ -23,6 +23,10 @@ Serveur MCP qui donne à Claude un accès direct aux API des administrations fra
 
 Prérequis : Node.js ≥ 20.3 disponible pour Claude Desktop (runtime intégré de l'application pour les extensions, ou Node installé sur le poste — à vérifier selon la version de Claude Desktop).
 
+### Connecteur distant (claude.ai, Desktop, mobile, Cowork)
+
+Une fois le serveur déployé (voir « Déploiement du serveur distant »), sa page d'accueil indique l'URL à saisir dans Claude : **Paramètres → Connecteurs → Ajouter un connecteur personnalisé**. À la connexion, Claude ouvre la page de connexion du serveur : chaque utilisateur y saisit ses propres identifiants INSEE / PISTE (facultatifs), les teste, puis autorise. Offres Team / Enterprise : l'ajout est réservé à un propriétaire de l'organisation.
+
 ### Claude Code
 
 ```bash
@@ -54,6 +58,30 @@ Omettre les `-e` des modules non souhaités.
 
 Derrière un proxy d'entreprise : Node ≥ 22.21 honore `HTTPS_PROXY` avec `NODE_USE_ENV_PROXY=1`.
 
+## Déploiement du serveur distant
+
+Image Docker autonome (`Dockerfile`), sans base de données. Variables :
+
+| Variable | Rôle |
+|---|---|
+| `PUBLIC_URL` | URL publique HTTPS du serveur, sans `/mcp` (ex. `https://mcp.exemple.fr`) |
+| `SERVER_SECRET` | Clé de chiffrement des jetons, ≥ 32 octets aléatoires en base64url (`openssl rand -base64 48`). À conserver dans un coffre ; la changer déconnecte tous les utilisateurs |
+| `PORT` | Port d'écoute (défaut 8080) |
+| `CIMD_TRUSTED_HOSTS` | Hôtes autorisés à publier un document client CIMD (défaut `claude.ai,claude.com`) |
+
+```bash
+docker build -t api-publiques-fr .
+```
+
+```bash
+docker run -d -p 8080:8080 -e PUBLIC_URL=https://mcp.exemple.fr -e SERVER_SECRET=... api-publiques-fr
+```
+
+Le serveur doit être joignable en HTTPS depuis Internet (terminaison TLS par l'hébergeur ou un reverse proxy). Fonctionnement :
+- OAuth 2.1 intégré, conforme aux exigences des connecteurs Claude : métadonnées RFC 9728 / RFC 8414, client CIMD (prioritaire) ou enregistrement dynamique, PKCE S256, rafraîchissement avec rotation.
+- Sans état : les identifiants de l'utilisateur sont chiffrés (AES-256-GCM) dans ses jetons ; le serveur ne stocke rien. Jeton d'accès 1 h, rafraîchissement 90 jours.
+- Limites assumées : un jeton de rafraîchissement ne peut pas être révoqué individuellement avant expiration (révoquer la clé côté INSEE / PISTE, ou changer `SERVER_SECRET`) ; l'anti-rejeu des codes d'autorisation est en mémoire (une instance).
+
 ## Développement
 
 ```bash
@@ -68,7 +96,15 @@ npx tsx scripts/call.ts bofip_rechercher '{"texte":"crédit d impôt recherche",
 npm run pack:mcpb
 ```
 
-Choix techniques : TypeScript, SDK MCP v2 (`@modelcontextprotocol/server`), transport stdio ; réponses en JSON compact élagué (valeurs vides retirées, HTML converti en texte, textes longs par fenêtres de 20 000 caractères avec paramètre `debut`) ; 4 tentatives avec attente exponentielle sur erreurs réseau, 429 (`Retry-After` respecté) et 502–504.
+```bash
+PUBLIC_URL=http://localhost:8080 SERVER_SECRET=$(openssl rand -base64 48) npm run start:remote
+```
+
+```bash
+npm run e2e:remote
+```
+
+Choix techniques : TypeScript, SDK MCP v2 (`@modelcontextprotocol/server`), transports stdio (local) et Streamable HTTP (distant) ; réponses en JSON compact élagué (valeurs vides retirées, HTML converti en texte, textes longs par fenêtres de 20 000 caractères avec paramètre `debut`) ; 4 tentatives avec attente exponentielle sur erreurs réseau, 429 (`Retry-After` respecté) et 502–504.
 
 Guide utilisateur (configuration, tests de recette, dépannage) : [docs/GUIDE_UTILISATEUR.md](docs/GUIDE_UTILISATEUR.md). Sources documentaires et écarts constatés : [docs/SOURCES.md](docs/SOURCES.md). Feuille de route : [docs/ROADMAP.md](docs/ROADMAP.md).
 

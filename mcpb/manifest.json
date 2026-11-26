@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "api-publiques-fr",
   "display_name": "API publiques françaises",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Annuaire des entreprises, Sirene, Légifrance, Judilibre, BOFiP et data.gouv.fr dans Claude.",
   "long_description": "Connecte Claude aux API des administrations françaises.\n\n**Sans clé** : Recherche d'entreprises (DINUM), BOFiP-Impôts en vigueur (DGFiP), catalogue et API tabulaire data.gouv.fr.\n\n**Avec clé** : Sirene 3.11 (clé INSEE, portail-api.insee.fr) ; Légifrance et Judilibre (identifiants OAuth d'une application PISTE, piste.gouv.fr).\n\nLes champs laissés vides désactivent simplement le module correspondant. Outil projet indépendant, non édité par les administrations concernées.",
   "author": {

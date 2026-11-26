@@ -6,13 +6,12 @@
  */
 import type { McpServer } from "@modelcontextprotocol/server";
 import * as z from "zod/v4";
-import { config } from "../config.js";
+import { type Credentials, config } from "../config.js";
 import { deepStripHtml, json, prune, readOnly, window } from "../format.js";
 import { pisteRequest } from "../piste.js";
 
 const SERVICE = "Légifrance (PISTE)";
-const lf = <T = Record<string, unknown>>(path: string, body: unknown, signal: AbortSignal) =>
-  pisteRequest<T>(config.piste.legifrancePath, path, { service: SERVICE, method: "POST", json: body, signal });
+
 
 const today = () => new Date().toISOString().slice(0, 10);
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe("Date de consultation (AAAA-MM-JJ) ; défaut : aujourd'hui");
@@ -35,7 +34,9 @@ function consultRoute(id: string, d: string): { path: string; body: Record<strin
 
 const FONDS = ["ALL", "CODE_ETAT", "CODE_DATE", "LODA_ETAT", "LODA_DATE", "JORF", "JURI", "CETAT", "CONSTIT", "KALI", "CIRC", "ACCO", "CNIL"] as const;
 
-export function registerLegifrance(server: McpServer) {
+export function registerLegifrance(server: McpServer, creds: Credentials) {
+  const lf = <T = Record<string, unknown>>(path: string, body: unknown, signal: AbortSignal) =>
+    pisteRequest<T>(creds, config.legifrancePath, path, { service: SERVICE, method: "POST", json: body, signal });
   server.registerTool(
     "legifrance_rechercher",
     {

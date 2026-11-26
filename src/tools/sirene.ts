@@ -5,7 +5,7 @@
  */
 import type { McpServer } from "@modelcontextprotocol/server";
 import * as z from "zod/v4";
-import { config } from "../config.js";
+import { type Credentials, config } from "../config.js";
 import { json, prune, readOnly } from "../format.js";
 import { request, type Query } from "../http.js";
 
@@ -13,11 +13,11 @@ const SERVICE = "API Sirene (INSEE)";
 const NOTE_DIFFUSION =
   "Unités en diffusion partielle (statutDiffusion = P, art. R123-232-1 C. com.) : informations personnelles à ne pas rediffuser intégralement ni utiliser à des fins de prospection.";
 
-async function sirene(path: string, query: Query, signal: AbortSignal) {
-  return request<Record<string, unknown>>(`${config.insee.base}${path}`, {
+async function sirene(apiKey: string, path: string, query: Query, signal: AbortSignal) {
+  return request<Record<string, unknown>>(`${config.inseeBase}${path}`, {
     service: SERVICE,
     query: { ...query, masquerValeursNulles: true },
-    headers: { "X-INSEE-Api-Key-Integration": config.insee.apiKey! },
+    headers: { "X-INSEE-Api-Key-Integration": apiKey },
     signal,
   });
 }
@@ -42,7 +42,8 @@ function hasPartial(data: unknown): boolean {
 
 const out = (data: unknown) => json(prune(data), hasPartial(data) ? NOTE_DIFFUSION : undefined);
 
-export function registerSirene(server: McpServer) {
+export function registerSirene(server: McpServer, creds: Credentials) {
+  const key = creds.inseeApiKey!;
   server.registerTool(
     "sirene_unite_legale",
     {
@@ -58,7 +59,7 @@ export function registerSirene(server: McpServer) {
       annotations: readOnly,
     },
     async ({ siren, date, historique }, ctx) => {
-      const d = await sirene(`/siren/${siren}`, { date }, ctx.mcpReq.signal);
+      const d = await sirene(key, `/siren/${siren}`, { date }, ctx.mcpReq.signal);
       return out(trimPeriods(d.uniteLegale, historique));
     },
   );
@@ -78,7 +79,7 @@ export function registerSirene(server: McpServer) {
       annotations: readOnly,
     },
     async ({ siret, date, historique }, ctx) => {
-      const d = await sirene(`/siret/${siret}`, { date }, ctx.mcpReq.signal);
+      const d = await sirene(key, `/siret/${siret}`, { date }, ctx.mcpReq.signal);
       return out(trimPeriods(d.etablissement, historique));
     },
   );
@@ -106,7 +107,7 @@ export function registerSirene(server: McpServer) {
     },
     async (a, ctx) => {
       const path = a.cible === "unites_legales" ? "/siren" : "/siret";
-      const d = await sirene(path, { q: a.q, champs: a.champs, date: a.date, tri: a.tri, nombre: a.nombre, debut: a.debut }, ctx.mcpReq.signal);
+      const d = await sirene(key, path, { q: a.q, champs: a.champs, date: a.date, tri: a.tri, nombre: a.nombre, debut: a.debut }, ctx.mcpReq.signal);
       const list = (d.unitesLegales ?? d.etablissements ?? []) as unknown[];
       const header = d.header as { total?: number; debut?: number; nombre?: number } | undefined;
       const fin = (header?.debut ?? 0) + list.length;
@@ -133,7 +134,7 @@ export function registerSirene(server: McpServer) {
       annotations: readOnly,
     },
     async (a, ctx) => {
-      const d = await sirene("/siret/liensSuccession", { q: a.q, nombre: a.nombre, debut: a.debut }, ctx.mcpReq.signal);
+      const d = await sirene(key, "/siret/liensSuccession", { q: a.q, nombre: a.nombre, debut: a.debut }, ctx.mcpReq.signal);
       return out({ total: (d.header as { total?: number })?.total, liens: d.liensSuccession });
     },
   );

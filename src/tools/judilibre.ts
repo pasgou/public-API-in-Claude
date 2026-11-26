@@ -5,18 +5,19 @@
  */
 import type { McpServer } from "@modelcontextprotocol/server";
 import * as z from "zod/v4";
-import { config } from "../config.js";
+import { type Credentials, config } from "../config.js";
 import { json, prune, readOnly, window } from "../format.js";
 import type { Query } from "../http.js";
 import { pisteRequest } from "../piste.js";
 
 const SERVICE = "Judilibre (PISTE)";
-const jl = <T = Record<string, unknown>>(path: string, query: Query, signal: AbortSignal) =>
-  pisteRequest<T>(config.piste.judilibrePath, path, { service: SERVICE, query, signal });
+
 
 const list = z.array(z.string()).optional();
 
-export function registerJudilibre(server: McpServer) {
+export function registerJudilibre(server: McpServer, creds: Credentials) {
+  const jl = <T = Record<string, unknown>>(path: string, query: Query, signal: AbortSignal) =>
+    pisteRequest<T>(creds, config.judilibrePath, path, { service: SERVICE, query, signal });
   server.registerTool(
     "judilibre_rechercher",
     {
