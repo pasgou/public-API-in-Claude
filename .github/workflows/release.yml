@@ -11,7 +11,7 @@ on:
         description: "Version à publier, sans « v » (doit correspondre à mcpb/manifest.json du commit construit)"
         required: true
       target:
-        description: "Commit à construire (défaut : commit du lancement)"
+        description: "SHA complet du commit à construire (défaut : commit du lancement)"
         required: false
       latest:
         description: "Marquer comme dernière version"
@@ -25,12 +25,12 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ inputs.target || github.sha }}
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
