@@ -68,6 +68,7 @@ Image Docker autonome (`Dockerfile`), sans base de données. Variables :
 | `SERVER_SECRET` | Clé de chiffrement des jetons, ≥ 32 octets aléatoires en base64url (`openssl rand -base64 48`). À conserver dans un coffre ; la changer déconnecte tous les utilisateurs |
 | `PORT` | Port d'écoute (défaut 8080) |
 | `CIMD_TRUSTED_HOSTS` | Hôtes autorisés à publier un document client CIMD (défaut `claude.ai,claude.com`) |
+| `RATE_LIMIT_OAUTH` / `RATE_LIMIT_MCP` | Requêtes par minute : par IP sur les pages OAuth (30), par jeton sur `/mcp` (120) |
 
 ```bash
 docker build -t api-publiques-fr .
@@ -80,6 +81,7 @@ docker run -d -p 8080:8080 -e PUBLIC_URL=https://mcp.exemple.fr -e SERVER_SECRET
 Le serveur doit être joignable en HTTPS depuis Internet (terminaison TLS par l'hébergeur ou un reverse proxy). Fonctionnement :
 - OAuth 2.1 intégré, conforme aux exigences des connecteurs Claude : métadonnées RFC 9728 / RFC 8414, client CIMD (prioritaire) ou enregistrement dynamique, PKCE S256, rafraîchissement avec rotation.
 - Sans état : les identifiants de l'utilisateur sont chiffrés (AES-256-GCM) dans ses jetons ; le serveur ne stocke rien. Jeton d'accès 1 h, rafraîchissement 90 jours.
+- Durcissement : limitation de débit (par jeton sur `/mcp`, le trafic de Claude provenant d'IP partagées), contrôle `Origin` du formulaire de connexion, aucune journalisation d'en-tête ni d'identifiant, image exécutée en utilisateur non-root et compatible avec un système de fichiers en lecture seule.
 - Limites assumées : un jeton de rafraîchissement ne peut pas être révoqué individuellement avant expiration (révoquer la clé côté INSEE / PISTE, ou changer `SERVER_SECRET`) ; l'anti-rejeu des codes d'autorisation est en mémoire (une instance).
 
 ## Développement

@@ -2,10 +2,12 @@
 /**
  * Serveur distant (Streamable HTTP) pour les connecteurs personnalisés Claude : claude.ai, Desktop, mobile, Cowork.
  * Variables : PUBLIC_URL (https://hôte public, sans /mcp), SERVER_SECRET (≥ 32 octets base64url), PORT (8080),
- * CIMD_TRUSTED_HOSTS (hôtes autorisés à publier un document client CIMD ; défaut claude.ai,claude.com).
+ * CIMD_TRUSTED_HOSTS (hôtes autorisés à publier un document client CIMD ; défaut claude.ai,claude.com),
+ * RATE_LIMIT_OAUTH (requêtes/min par IP sur les pages OAuth, défaut 30), RATE_LIMIT_MCP (requêtes/min par jeton, défaut 120).
+ * Aucune donnée sensible n'est journalisée (ni en-tête Authorization, ni identifiant).
  */
 import express from "express";
-import { createMcpExpressApp, mcpAuthMetadataRouter, requireBearerAuth } from "@modelcontextprotocol/express";
+import { createMcpExpressApp, mcpAuthMetadataRouter, originValidation, requireBearerAuth } from "@modelcontextprotocol/express";
 import { toNodeHandler } from "@modelcontextprotocol/node";
 import {
   createMcpHandler,
@@ -20,6 +22,7 @@ import { type Credentials, env } from "../config.js";
 import { createServer, VERSION } from "../server.js";
 import { authorizeGet, authorizePost, readAccessToken, register, token, type OAuthSettings } from "./oauth.js";
 import { homePage } from "./pages.js";
+import { byIp, byToken, rateLimit } from "./ratelimit.js";
 import { initSecret } from "./seal.js";
 
 const publicUrl = env("PUBLIC_URL")?.replace(/\/$/, "");
@@ -79,15 +82,18 @@ app.use(
 
 app.get("/", (_req, res) => void res.type("html").send(homePage(mcpUrl.href)));
 app.get("/health", (_req, res) => void res.json({ ok: true, version: VERSION }));
-app.post("/register", register);
-app.get("/authorize", (req, res) => void authorizeGet(req, res, settings));
-app.post("/authorize", (req, res) => void authorizePost(req, res, settings));
-app.post("/token", (req, res) => token(req, res, settings));
+const oauthLimit = rateLimit(Number(env("RATE_LIMIT_OAUTH") ?? 30), byIp);
+// Formulaire de connexion : n'accepter que les envois depuis la page du serveur lui-même.
+const sameOrigin = originValidation([issuer.hostname]);
+app.post("/register", oauthLimit, register);
+app.get("/authorize", oauthLimit, (req, res) => void authorizeGet(req, res, settings));
+app.post("/authorize", oauthLimit, sameOrigin, (req, res) => void authorizePost(req, res, settings));
+app.post("/token", oauthLimit, (req, res) => token(req, res, settings));
 
 const handler = createMcpHandler(({ authInfo }) => createServer((authInfo?.extra?.creds as Credentials | undefined) ?? {}));
 const nodeHandler = toNodeHandler(handler);
 const requireAuth = requireBearerAuth({ verifier, expectedResource: mcpUrl, resourceMetadataUrl: getOAuthProtectedResourceMetadataUrl(mcpUrl) });
-app.all("/mcp", requireAuth, (req, res) => void nodeHandler(req, res, req.body));
+app.all("/mcp", rateLimit(Number(env("RATE_LIMIT_MCP") ?? 120), byToken), requireAuth, (req, res) => void nodeHandler(req, res, req.body));
 
 const port = Number(env("PORT") ?? 8080);
 app.listen(port, "0.0.0.0", () => console.error(`api-publiques-fr ${VERSION} (HTTP) — ${mcpUrl.href} — écoute sur le port ${port}`));
