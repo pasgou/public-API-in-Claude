@@ -1,0 +1,150 @@
+# Déploie le serveur distant sur Scaleway Serverless Containers (région fr-par).
+# Sources : docs CLI scaleway-cli (container.md, registry.md), scaleway/action-scw, docs-content (push-images,
+# containers-limitations, add-a-custom-domain-to-a-container).
+#
+# Prérequis (une fois) — Settings → Secrets and variables → Actions :
+#   Secrets   : SCW_ACCESS_KEY, SCW_SECRET_KEY, SCW_DEFAULT_PROJECT_ID, SCW_DEFAULT_ORGANIZATION_ID
+#   Variables : PUBLIC_URL (facultatif : https://domaine-personnalisé ; défaut = domaine fourni par Scaleway)
+# Premier lancement : crée le registre privé, l'espace de conteneurs et le conteneur (min/max 1 instance,
+# 0,14 vCPU, 256 Mo), et génère SERVER_SECRET directement dans Scaleway (jamais stocké dans GitHub).
+# Lancements suivants : nouvelle image, contrôle de sécurité, mise à jour, vérification du commit déployé.
+name: Deploy Scaleway
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+
+concurrency:
+  group: deploy-scaleway
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  REGION: fr-par
+  REGISTRY_NS: api-publiques-fr
+  CONTAINER_NS: mcp-serveurs
+  CONTAINER_NAME: api-publiques-fr
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Vérifier la configuration
+        env:
+          A: ${{ secrets.SCW_ACCESS_KEY }}
+          B: ${{ secrets.SCW_SECRET_KEY }}
+          C: ${{ secrets.SCW_DEFAULT_PROJECT_ID }}
+          D: ${{ secrets.SCW_DEFAULT_ORGANIZATION_ID }}
+        run: |
+          for v in A B C D; do [ -n "${!v}" ] || { echo "::error::Secrets Scaleway manquants (SCW_ACCESS_KEY, SCW_SECRET_KEY, SCW_DEFAULT_PROJECT_ID, SCW_DEFAULT_ORGANIZATION_ID)"; exit 1; }; done
+
+      - name: CLI Scaleway
+        uses: scaleway/action-scw@v0
+        with:
+          save-config: true
+          export-config: true
+          access-key: ${{ secrets.SCW_ACCESS_KEY }}
+          secret-key: ${{ secrets.SCW_SECRET_KEY }}
+          default-project-id: ${{ secrets.SCW_DEFAULT_PROJECT_ID }}
+          default-organization-id: ${{ secrets.SCW_DEFAULT_ORGANIZATION_ID }}
+
+      - name: Registre privé
+        id: registry
+        run: |
+          ID=$(scw -o json registry namespace list name="$REGISTRY_NS" region="$REGION" | jq -r --arg n "$REGISTRY_NS" '[.[] | select(.name==$n)][0].id // empty')
+          if [ -z "$ID" ]; then
+            ID=$(scw -o json registry namespace create name="$REGISTRY_NS" is-public=false region="$REGION" | jq -r .id)
+            echo "Registre créé : $ID"
+          fi
+          scw registry login region="$REGION"
+          echo "image=rg.$REGION.scw.cloud/$REGISTRY_NS/$CONTAINER_NAME:$(git rev-parse --short=12 HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Construire l'image
+        run: docker build -t "${{ steps.registry.outputs.image }}" .
+
+      - name: Contrôle de sécurité de l'image (vulnérabilités hautes et critiques corrigeables)
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image \
+            --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress "${{ steps.registry.outputs.image }}"
+
+      - name: Pousser l'image
+        run: docker push "${{ steps.registry.outputs.image }}"
+
+      - name: Espace de conteneurs
+        id: ns
+        run: |
+          ID=$(scw -o json container namespace list name="$CONTAINER_NS" region="$REGION" | jq -r --arg n "$CONTAINER_NS" '[.[] | select(.name==$n)][0].id // empty')
+          if [ -z "$ID" ]; then
+            ID=$(scw -o json container namespace create name="$CONTAINER_NS" region="$REGION" | jq -r .id)
+            echo "Espace créé : $ID"
+          fi
+          for i in $(seq 1 60); do
+            S=$(scw -o json container namespace get "$ID" region="$REGION" | jq -r .status)
+            [ "$S" = "ready" ] && break
+            [ "$S" = "error" ] && { echo "::error::Espace de conteneurs en erreur"; exit 1; }
+            sleep 5
+          done
+          echo "id=$ID" >> "$GITHUB_OUTPUT"
+
+      - name: Créer ou mettre à jour le conteneur
+        id: ct
+        env:
+          IMAGE: ${{ steps.registry.outputs.image }}
+          NS_ID: ${{ steps.ns.outputs.id }}
+          PUBLIC_URL_VAR: ${{ vars.PUBLIC_URL }}
+        run: |
+          ID=$(scw -o json container container list namespace-id="$NS_ID" name="$CONTAINER_NAME" region="$REGION" | jq -r --arg n "$CONTAINER_NAME" '[.[] | select(.name==$n)][0].id // empty')
+          if [ -z "$ID" ]; then
+            SECRET=$(openssl rand -base64 48 | tr '+/' '-_' | tr -d '=')
+            echo "::add-mask::$SECRET"
+            ID=$(scw -o json container container create namespace-id="$NS_ID" name="$CONTAINER_NAME" image="$IMAGE" \
+              min-scale=1 max-scale=1 memory-limit-bytes=268435456 mvcpu-limit=140 port=8080 \
+              privacy=public https-connections-only=true liveness-probe.http.path=/health \
+              secret-environment-variables.SERVER_SECRET="$SECRET" region="$REGION" | jq -r .id)
+            unset SECRET
+            echo "Conteneur créé : $ID"
+          fi
+          DOMAIN=$(scw -o json container container get "$ID" region="$REGION" | jq -r .domain_name)
+          URL="${PUBLIC_URL_VAR:-https://$DOMAIN}"
+          URL="${URL%/}"
+          # La mise à jour ne modifie que les champs fournis : SERVER_SECRET (secret) est conservé.
+          scw container container update "$ID" image="$IMAGE" min-scale=1 max-scale=1 \
+            environment-variables.PUBLIC_URL="$URL" environment-variables.GIT_SHA="$(git rev-parse --short=12 HEAD)" \
+            region="$REGION" > /dev/null
+          echo "id=$ID" >> "$GITHUB_OUTPUT"
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "domain=$DOMAIN" >> "$GITHUB_OUTPUT"
+
+      - name: Vérifier le déploiement
+        env:
+          URL: ${{ steps.ct.outputs.url }}
+          ID: ${{ steps.ct.outputs.id }}
+        run: |
+          SHA=$(git rev-parse --short=12 HEAD)
+          ok=""
+          for i in $(seq 1 60); do
+            C=$(curl -fsS -m 10 "$URL/health" 2>/dev/null | jq -r .commit 2>/dev/null || true)
+            [ "$C" = "$SHA" ] && { ok=1; break; }
+            # Sans nouvelle instance au bout de 3 minutes : forcer le déploiement une fois.
+            [ "$i" = 18 ] && scw container container redeploy "$ID" region="$REGION" > /dev/null
+            sleep 10
+          done
+          [ -n "$ok" ] || { echo "::error::Le commit $SHA n'est pas en ligne sur $URL/health"; scw -o json container container get "$ID" region="$REGION" | jq '{status, error_message}'; exit 1; }
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X POST "$URL/mcp")" = 401
+          curl -fsS "$URL/.well-known/oauth-protected-resource/mcp" | jq -e --arg r "$URL/mcp" '.resource == $r' > /dev/null
+          {
+            echo "### Serveur distant déployé"
+            echo ""
+            echo "- Commit : \`$SHA\`"
+            echo "- URL à saisir dans Claude (connecteur personnalisé) : \`$URL/mcp\`"
+            echo "- Domaine Scaleway : \`${{ steps.ct.outputs.domain }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"

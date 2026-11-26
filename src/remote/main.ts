@@ -7,7 +7,7 @@
  * Aucune donnée sensible n'est journalisée (ni en-tête Authorization, ni identifiant).
  */
 import express from "express";
-import { createMcpExpressApp, mcpAuthMetadataRouter, originValidation, requireBearerAuth } from "@modelcontextprotocol/express";
+import { hostHeaderValidation, mcpAuthMetadataRouter, originValidation, requireBearerAuth } from "@modelcontextprotocol/express";
 import { toNodeHandler } from "@modelcontextprotocol/node";
 import {
   createMcpHandler,
@@ -67,8 +67,14 @@ const verifier: OAuthTokenVerifier = {
   },
 };
 
-const app = createMcpExpressApp({ host: "0.0.0.0", allowedHosts: [issuer.hostname, "localhost", "127.0.0.1"] });
+const app = express();
+app.disable("x-powered-by");
 app.set("trust proxy", true);
+// Sonde de santé avant le contrôle Host : les sondes de l'hébergeur appellent l'adresse interne du conteneur.
+app.get("/health", (_req, res) => void res.json({ ok: true, version: VERSION, commit: env("GIT_SHA") ?? "local" }));
+// Protection DNS rebinding : seul le nom public (et localhost pour les tests) est accepté.
+app.use(hostHeaderValidation([issuer.hostname, "localhost", "127.0.0.1"]));
+app.use(express.json({ limit: "4mb" }));
 app.use(express.urlencoded({ extended: false, limit: "32kb" }));
 app.use(
   mcpAuthMetadataRouter({
@@ -81,7 +87,6 @@ app.use(
 );
 
 app.get("/", (_req, res) => void res.type("html").send(homePage(mcpUrl.href)));
-app.get("/health", (_req, res) => void res.json({ ok: true, version: VERSION }));
 const oauthLimit = rateLimit(Number(env("RATE_LIMIT_OAUTH") ?? 30), byIp);
 // Formulaire de connexion : n'accepter que les envois depuis la page du serveur lui-même.
 const sameOrigin = originValidation([issuer.hostname]);

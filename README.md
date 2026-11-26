@@ -78,6 +78,19 @@ docker build -t api-publiques-fr .
 docker run -d -p 8080:8080 -e PUBLIC_URL=https://mcp.exemple.fr -e SERVER_SECRET=... api-publiques-fr
 ```
 
+### Déploiement automatique sur Scaleway (GitHub Action)
+
+Workflow `.github/workflows/deploy-scaleway.yml` : lancé après chaque release réussie, ou à la main (Actions → Deploy Scaleway → Run workflow). Cible : Serverless Containers, région `fr-par`, une instance permanente (0,14 vCPU, 256 Mo).
+
+Mise en place, une seule fois :
+1. Console Scaleway → IAM : créer une application dédiée au déploiement, lui donner les droits de gestion de Container Registry et de Serverless Containers sur le projet, puis générer une clé d'API pour cette application.
+2. GitHub → Settings → Secrets and variables → Actions → Secrets : `SCW_ACCESS_KEY`, `SCW_SECRET_KEY`, `SCW_DEFAULT_PROJECT_ID`, `SCW_DEFAULT_ORGANIZATION_ID`.
+3. Lancer le workflow. Au premier passage, il crée le registre privé, l'espace de conteneurs et le conteneur, et génère `SERVER_SECRET` directement dans Scaleway (secret jamais stocké dans GitHub). Le résumé de l'exécution donne l'URL à saisir dans Claude.
+
+Domaine personnalisé (facultatif) : créer un enregistrement DNS CNAME vers le domaine Scaleway du conteneur, l'ajouter dans la console (conteneur → Network & Domains → Add Custom domain), attendre l'état `ready`, renseigner la variable GitHub `PUBLIC_URL` (`https://mcp.exemple.fr`) et relancer le workflow. Changer d'URL publique invalide les connexions existantes : chaque utilisateur se reconnecte dans Claude.
+
+Chaque déploiement : image étiquetée par commit, contrôle Trivy (vulnérabilités hautes et critiques corrigeables bloquantes), mise à jour du conteneur, puis vérification que `/health` renvoie le commit attendu, que `/mcp` répond 401 et que les métadonnées OAuth sont cohérentes.
+
 Le serveur doit être joignable en HTTPS depuis Internet (terminaison TLS par l'hébergeur ou un reverse proxy). Fonctionnement :
 - OAuth 2.1 intégré, conforme aux exigences des connecteurs Claude : métadonnées RFC 9728 / RFC 8414, client CIMD (prioritaire) ou enregistrement dynamique, PKCE S256, rafraîchissement avec rotation.
 - Sans état : les identifiants de l'utilisateur sont chiffrés (AES-256-GCM) dans ses jetons ; le serveur ne stocke rien. Jeton d'accès 1 h, rafraîchissement 90 jours.
