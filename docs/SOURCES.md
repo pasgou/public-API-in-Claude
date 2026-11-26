@@ -32,10 +32,10 @@ Points d'accès PISTE (annexe 12.2 du guide) : production `https://api.piste.gou
 | 5 | PISTE | Le guide utilisateur PISTE ne précise pas l'ordre CGU / souscription | Tant que les CGU d'une API ne sont pas acceptées, sa case reste grisée dans l'application et la souscription n'est pas enregistrée, sans message d'erreur ; l'appel renvoie alors 403 | Accepter les CGU (page de consentement) puis cocher les API dans « Modifier l'application » ; contrôler « API Souscrites » (constat utilisateur, 26/11/2026) |
 | 6 | BOFiP | — | La recherche `search()` d'Opendatasoft ne trie pas par pertinence : la publication attendue peut être hors des premiers résultats | Reclassement local des 100 premiers résultats (mots du titre, Contenu avant Actualité) |
 
-## Recette avec identifiants (26/11/2026)
+## Recettes avec identifiants (26/11/2026)
 
-Recette utilisateur concluante sur les six modules (requêtes de test : `GUIDE_UTILISATEUR.md`, section « Vérifier l'installation »).
+- Recette initiale concluante sur les six modules (`GUIDE_UTILISATEUR.md`, « Vérifier l'installation »).
+- Recette complémentaire Légifrance / Judilibre (`RECETTE_LEGIFRANCE_JUDILIBRE.md`) : consultation `CETATEXT` et `CONSTEXT` via `/consult/juri` validée ; tri `PERTINENCE` accepté sur CETAT, CONSTIT, LODA_ETAT, JORF, KALI, et effectivement appliqué sur CETAT (ordre différent de `DATE_DESC`).
+- Constat : le fonds `CETAT` inclut les cours administratives d'appel ; libellés corrigés.
 
-Restent non couverts par cette recette :
-- Légifrance : consultation des identifiants `CETATEXT` / `CONSTEXT` via `/consult/juri` (le swagger ne documente que `JURITEXT`).
-- Légifrance : valeur de tri `PERTINENCE` sur les fonds autres que les codes.
+Restent non testés : fonds CIRC, ACCO, CNIL, CODE_DATE, LODA_DATE ; outils `legifrance_convention_collective`, `legifrance_lister_codes`, `legifrance_table_matieres`, `judilibre_taxonomie` ; filtre par juridiction sur CETAT.

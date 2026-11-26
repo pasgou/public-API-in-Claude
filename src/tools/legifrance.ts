@@ -42,7 +42,7 @@ export function registerLegifrance(server: McpServer) {
       title: "Légifrance : recherche",
       description:
         "Recherche dans les fonds Légifrance : codes (CODE_ETAT = version en vigueur, CODE_DATE = à une date), lois et décrets (LODA_*), JORF, " +
-        "jurisprudence judiciaire (JURI), administrative (CETAT), constitutionnelle (CONSTIT), conventions collectives (KALI), circulaires (CIRC), accords d'entreprise (ACCO), CNIL. " +
+        "jurisprudence judiciaire (JURI), administrative (CETAT : Conseil d'État ET cours administratives d'appel), constitutionnelle (CONSTIT), conventions collectives (KALI), circulaires (CIRC), accords d'entreprise (ACCO), CNIL. " +
         "Renvoie titres, identifiants (à passer à legifrance_consulter), dates, état juridique et extraits. " +
         "Ex. : texte='crédit d'impôt recherche', fonds='CODE_ETAT', champ='ARTICLE'. Pour un article de code dont on connaît le numéro, utiliser legifrance_article.",
       inputSchema: z.strictObject({

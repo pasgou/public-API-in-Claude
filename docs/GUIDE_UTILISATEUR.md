@@ -14,7 +14,7 @@ Trois modules fonctionnent sans clé ; Sirene, Légifrance et Judilibre exigent 
 
 | Module | Contenu | Outils | Accès |
 | --- | --- | --- | --- |
-| Légifrance | Codes et textes en vigueur ou à une date, JORF, conventions collectives (IDCC), circulaires, jurisprudence administrative et constitutionnelle | `legifrance_rechercher`, `legifrance_article`, `legifrance_consulter`, `legifrance_convention_collective`, `legifrance_lister_codes`, `legifrance_table_matieres` | Application PISTE |
+| Légifrance | Codes et textes en vigueur ou à une date, JORF, conventions collectives (IDCC), circulaires, jurisprudence administrative (Conseil d'État et cours administratives d'appel, fonds `CETAT`) et constitutionnelle | `legifrance_rechercher`, `legifrance_article`, `legifrance_consulter`, `legifrance_convention_collective`, `legifrance_lister_codes`, `legifrance_table_matieres` | Application PISTE |
 | BOFiP-Impôts | Doctrine fiscale en vigueur : commentaires, rescrits, actualités | `bofip_rechercher`, `bofip_document` | Libre |
 | Judilibre | Décisions de la Cour de cassation et des juridictions du fond (CA, TJ, tribunaux de commerce) | `judilibre_rechercher`, `judilibre_decision`, `judilibre_taxonomie` | Application PISTE |
 | Sirene (INSEE) | Unités légales et établissements, historique, successions d'établissements | `sirene_rechercher`, `sirene_unite_legale`, `sirene_etablissement`, `sirene_successions` | Clé INSEE |
