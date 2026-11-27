@@ -42,7 +42,9 @@ async function call(name: string, args: Record<string, unknown>, check?: (text: 
 }
 
 await call("apis_publiques_statut", {});
-await call("entreprises_rechercher", { q: "la poste", par_page: 2 }, (t) => assert.match(t, /"siren"/));
+// Recherche par critères (aucune entreprise nommée) ; le SIREN obtenu sert au test Sirene.
+const ent = await call("entreprises_rechercher", { activite_principale: "69.20Z", departement: "75", par_page: 2, minimal: true }, (t) => assert.match(t, /"siren"/));
+const siren = ent?.match(/"siren":"(\d{9})"/)?.[1];
 const bofip = await call("bofip_rechercher", { texte: "crédit d'impôt recherche", serie: "BIC", limite: 3 }, (t) => assert.match(t, /BOI-/));
 const boi = bofip?.match(/"identifiant_juridique":"(BOI-[^"]+)"/)?.[1];
 if (boi) await call("bofip_document", { identifiant: boi }, (t) => assert.match(t, /"contenu"/));
@@ -54,7 +56,7 @@ if (dsId) {
   const rid = det?.match(/"id":"([0-9a-f-]{36})"[^}]*"format":"csv"/)?.[1];
   if (rid) await call("datagouv_donnees_tabulaires", { ressource_id: rid, par_page: 2 }, (t) => assert.match(t, /lignes/));
 }
-await call("sirene_unite_legale", { siren: "309634954" }, (t) => assert.match(t, /"siren":"309634954"/));
+if (siren) await call("sirene_unite_legale", { siren }, (t) => assert.ok(t.includes(`"siren":"${siren}"`)));
 await call("legifrance_lister_codes", { nom: "impôts" }, (t) => assert.match(t, /LEGITEXT/));
 await call("judilibre_taxonomie", { id: "jurisdiction" });
 

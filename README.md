@@ -17,7 +17,7 @@ Serveur MCP qui donne à Claude un accès direct aux API des administrations fra
 
 ### Claude Desktop (installation graphique)
 
-1. Télécharger `api-publiques-fr-<version>.mcpb` depuis la [dernière release](../../releases/latest) (ou le construire : `npm run pack:mcpb`).
+1. Télécharger `api-publiques-fr-<version>.mcpb` depuis la [dernière release](https://github.com/pasgou/public-API-in-Claude/releases/latest) (ou le construire : `npm run pack:mcpb`).
 2. Double-cliquer sur le fichier, ou Claude Desktop → Paramètres → Extensions → glisser le fichier.
 3. Le formulaire d'installation propose les champs facultatifs : clé Sirene, Client ID / Secret PISTE, case « bac à sable ». Laisser vide = module désactivé. Les champs marqués `sensitive` sont masqués et stockés de façon sécurisée par l'application (spécification MCPB).
 
@@ -30,7 +30,7 @@ Une fois le serveur déployé (voir « Déploiement du serveur distant »), sa p
 ### Claude Code
 
 ```bash
-git clone <URL du dépôt> api-publiques-fr && cd api-publiques-fr && npm ci && npm run build
+git clone https://github.com/pasgou/public-API-in-Claude api-publiques-fr && cd api-publiques-fr && npm ci && npm run build
 ```
 
 ```bash
@@ -122,6 +122,10 @@ npm run e2e:remote
 Choix techniques : TypeScript, SDK MCP v2 (`@modelcontextprotocol/server`), transports stdio (local) et Streamable HTTP (distant) ; réponses en JSON compact élagué (valeurs vides retirées, HTML converti en texte, textes longs par fenêtres de 20 000 caractères avec paramètre `debut`) ; 4 tentatives avec attente exponentielle sur erreurs réseau, 429 (`Retry-After` respecté) et 502–504.
 
 Journal des versions : [docs/CHANGELOG.md](docs/CHANGELOG.md). Publication : workflow `Release` (tag `vX.Y.Z` ou lancement manuel). Guide utilisateur (configuration, tests de recette, dépannage) : [docs/GUIDE_UTILISATEUR.md](docs/GUIDE_UTILISATEUR.md). Sources documentaires et écarts constatés : [docs/SOURCES.md](docs/SOURCES.md). Feuille de route : [docs/ROADMAP.md](docs/ROADMAP.md).
+
+## Contributeur
+
+Projet développé par Khétys (intégration Odoo, conseil et formation). Les exemples et jeux de test du dépôt ne contiennent aucune donnée permettant d'identifier une personne ou une entreprise ayant servi aux essais : recherches par critères (code NAF, département), références juridiques publiques uniquement.
 
 ## Avertissements
 
