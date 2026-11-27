@@ -1,6 +1,8 @@
 # Guide de construction d'un serveur MCP pour API publiques
 
-Mis à jour le 26/11/2026 – état du dépôt : version 0.2.0
+Mis à jour le 27/11/2026 – état du dépôt : version 0.2.1
+
+Projet développé par Khétys. Dépôt : https://github.com/pasgou/public-API-in-Claude
 
 ## Objet et usage
 
@@ -71,13 +73,19 @@ Les descriptions d'outils et les instructions du serveur sont lues par le modèl
 - des valeurs d'énumération listées par la spécification ;
 - des renvois vers d'autres outils du serveur.
 
-Jamais d'identifiant de document, d'article, de décision ou d'entreprise présenté comme exemple réel s'il n'a pas été vérifié. Les instructions du serveur rappellent la règle au modèle (`src/server.ts`) :
+Jamais d'identifiant de document, d'article, de décision ou d'entreprise présenté comme exemple réel s'il n'a pas été vérifié.
+
+Les instructions du serveur rappellent la règle au modèle (`src/server.ts`) :
 
 ```ts
 instructions:
   "Sources officielles françaises. Citer systématiquement la source renvoyée (...) avec sa date de version. " +
   "Ne jamais compléter une référence absente des résultats. Si un module attendu manque, appeler apis_publiques_statut.",
 ```
+
+### 1.6 Anonymat des données d'exemple et de test
+
+Le contributeur du projet est nommé (auteur du dépôt, du bundle, des guides : `package.json`, `mcpb/manifest.json`, section « Contributeur » du `README.md`). En revanche, les personnes et entreprises ayant servi aux essais n'apparaissent nulle part : aucune entreprise nommée, aucun SIREN ou SIRET réel, aucun nom de personne dans les exemples de recherche, les descriptions d'outils, les tests (`scripts/smoke.ts`), les recettes ni les messages de commit. Utiliser des recherches par critères (code NAF, département, label) ou des références juridiques publiques (article de code, identifiant BOI, numéro de pourvoi publié). Le contributeur lui-même ne sert pas d'exemple de connexion ou de recherche.
 
 ---
 
@@ -485,7 +493,7 @@ La terminaison TLS est assurée par l'hébergeur ou un mandataire inverse. Contr
 
 Workflow `.github/workflows/deploy-scaleway.yml` ; procédure de mise en place dans le `README.md` (« Déploiement automatique sur Scaleway »). Sources citées en tête du workflow : documentation de la CLI Scaleway (`container.md`, `registry.md`), action `scaleway/action-scw`, pages Scaleway sur la poussée d'images, les limites des conteneurs et les domaines personnalisés. Le site de documentation Scaleway refuse les lecteurs automatiques (403) : la documentation a été lue dans les dépôts officiels `scaleway/docs-content` (fichiers `.mdx`), `scaleway/scaleway-cli` (`docs/commands/container.md`, `registry.md`, `cookbook.md`) et `scaleway/action-scw`.
 
-**Déclencheurs** : lancement manuel, ou fin **réussie** du workflow `Release` (`workflow_run`, condition `conclusion == 'success'`). Le code extrait est celui de la release (`workflow_run.head_sha`). `concurrency` sans annulation : deux déploiements ne se chevauchent pas. Droits GitHub : `contents: read`.
+**Déclencheurs** : lancement manuel, ou fin **réussie** du workflow `Release` (`workflow_run`, condition `conclusion == 'success'`). Après une release, si les secrets Scaleway ne sont pas configurés, le workflow émet un avertissement et ignore toutes les étapes (sortie `ok=false`) au lieu d'échouer ; lancé à la main, il échoue. Le code extrait est celui de la release (`workflow_run.head_sha`). `concurrency` sans annulation : deux déploiements ne se chevauchent pas. Droits GitHub : `contents: read`.
 
 **Configuration GitHub** (noms seulement) :
 
@@ -495,7 +503,7 @@ Workflow `.github/workflows/deploy-scaleway.yml` ; procédure de mise en place d
 | Secret | `SCW_DEFAULT_PROJECT_ID`, `SCW_DEFAULT_ORGANIZATION_ID` | projet et organisation cibles |
 | Variable | `PUBLIC_URL` (facultative) | domaine personnalisé ; à défaut, domaine fourni par Scaleway |
 
-La première étape vérifie la présence des quatre secrets et échoue avec un message explicite sinon.
+La première étape vérifie la présence des quatre secrets (échec explicite en lancement manuel, déploiement ignoré après une release, voir ci-dessus).
 
 **Étapes** :
 
@@ -619,6 +627,7 @@ Pour `/authorize`, construire l'URL comme dans `scripts/remote-e2e.ts` (client D
 - [ ] API localisées dans le catalogue `data.gouv.fr/api/1/dataservices/?q=` ; spécification OpenAPI et version relevées.
 - [ ] Guides PDF et pages de portail lus (authentification, syntaxe de recherche, quotas).
 - [ ] `docs/SOURCES.md` créé : sources datées, limites documentées.
+- [ ] Contributeur renseigné (`package.json`, manifest, README) ; exemples anonymes (1.6).
 - [ ] Appels exploratoires réels sur chaque point d'accès ; écarts consignés avec contournement.
 - [ ] Conditions de réutilisation des données identifiées (données personnelles, licence, CGU).
 
@@ -641,7 +650,7 @@ Pour `/authorize`, construire l'URL comme dans `scripts/remote-e2e.ts` (client D
 
 ### Local
 
-- [ ] `npm run build && npm run smoke` vert, avec et sans identifiants.
+- [ ] `npm run build && npm run smoke` vert, avec et sans identifiants ; jeux de test sans entreprise ni personne nommée (1.6).
 - [ ] `mcpb/manifest.json` : `user_config` facultatifs, secrets `sensitive`, liste `tools` à jour ; `npm run pack:mcpb` valide.
 - [ ] Bundle installé et testé dans Claude Desktop.
 - [ ] `README.md` (installation, identifiants, variables), `docs/GUIDE_UTILISATEUR.md` (procédure d'obtention des clés, tests attendus, dépannage).
@@ -659,7 +668,7 @@ Pour `/authorize`, construire l'URL comme dans `scripts/remote-e2e.ts` (client D
 - [ ] Versions synchronisées (`package.json`, manifest, `VERSION`, User-Agent) ; `docs/CHANGELOG.md` complété.
 - [ ] Tag `vX.Y.Z` poussé ; release vérifiée (`.mcpb` + `.sha256`).
 - [ ] Secrets et variable de déploiement créés (6.2) ; application IAM à droits limités.
-- [ ] Workflow de déploiement vert : commit vérifié sur `/health`, 401 sur `/mcp`, métadonnées OAuth cohérentes ; e2e contre l'URL publique.
+- [ ] Workflow de déploiement vert (pas seulement « ignoré » faute de secrets) : commit vérifié sur `/health`, 401 sur `/mcp`, métadonnées OAuth cohérentes ; e2e contre l'URL publique.
 - [ ] Recette dans claude.ai (ajout du connecteur, connexion, appel d'outil) consignée sur le modèle de 7.3.
 - [ ] `docs/ROADMAP.md` : ce qui reste non testé.
 
