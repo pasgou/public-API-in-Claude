@@ -1,5 +1,11 @@
 # Journal des versions
 
+## 0.2.1 – 27/11/2026
+
+- Déploiement automatique sur Scaleway Serverless Containers (GitHub Action) ; sonde `/health` indiquant le commit déployé.
+- Image Docker allégée (npm retiré) et contrôlée par Trivy à chaque déploiement.
+- Khétys mentionné comme organisation contributrice ; jeux de test sans entreprise nommée.
+
 ## 0.2.0 – 26/11/2026
 
 - **Connecteur distant** (claude.ai, Claude Desktop, mobile, Cowork) : serveur Streamable HTTP avec OAuth 2.1 intégré et page de connexion où chaque utilisateur saisit et teste ses propres identifiants INSEE / PISTE. Sans base de données. Image Docker. Non encore déployé.

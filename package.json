@@ -1,6 +1,6 @@
 {
   "name": "api-publiques-fr-mcp-server",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Serveur MCP donnant à Claude l'accès aux API publiques françaises : Recherche d'entreprises, Sirene (INSEE), Légifrance et Judilibre (PISTE), BOFiP-Impôts, data.gouv.fr.",
   "type": "module",
   "bin": {
@@ -37,5 +37,6 @@
     "esbuild": "^0.28.2",
     "tsx": "^4.19.2",
     "typescript": "^5.9.3"
-  }
+  },
+  "author": "Khétys"
 }

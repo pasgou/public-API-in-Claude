@@ -10,7 +10,7 @@ export function env(name: string): string | undefined {
 }
 
 export const config = {
-  userAgent: env("MCP_USER_AGENT") ?? "api-publiques-fr-mcp-server/0.2",
+  userAgent: env("MCP_USER_AGENT") ?? "api-publiques-fr-mcp-server/0.2 (+https://github.com/pasgou/public-API-in-Claude)",
   // 3.11 = version de référence (maintenue jusqu'à mi-2028). La V4 (bêta depuis le 13/10/2026) a une syntaxe
   // multicritère différente (POST) : migration prévue quand elle deviendra officielle (mi-2027).
   inseeBase: "https://api.insee.fr/api-sirene/3.11",

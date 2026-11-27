@@ -39,15 +39,25 @@ jobs:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Vérifier la configuration
+        id: cfg
         env:
           A: ${{ secrets.SCW_ACCESS_KEY }}
           B: ${{ secrets.SCW_SECRET_KEY }}
           C: ${{ secrets.SCW_DEFAULT_PROJECT_ID }}
           D: ${{ secrets.SCW_DEFAULT_ORGANIZATION_ID }}
         run: |
-          for v in A B C D; do [ -n "${!v}" ] || { echo "::error::Secrets Scaleway manquants (SCW_ACCESS_KEY, SCW_SECRET_KEY, SCW_DEFAULT_PROJECT_ID, SCW_DEFAULT_ORGANIZATION_ID)"; exit 1; }; done
+          for v in A B C D; do
+            if [ -z "${!v}" ]; then
+              MSG="Secrets Scaleway manquants (SCW_ACCESS_KEY, SCW_SECRET_KEY, SCW_DEFAULT_PROJECT_ID, SCW_DEFAULT_ORGANIZATION_ID)"
+              # Après une release, ne pas échouer tant que le déploiement n'est pas configuré ; à la main, échouer.
+              if [ "${{ github.event_name }}" = "workflow_run" ]; then echo "::warning::$MSG : déploiement ignoré"; echo "ok=false" >> "$GITHUB_OUTPUT"; exit 0; fi
+              echo "::error::$MSG"; exit 1
+            fi
+          done
+          echo "ok=true" >> "$GITHUB_OUTPUT"
 
       - name: CLI Scaleway
+        if: steps.cfg.outputs.ok == 'true'
         uses: scaleway/action-scw@v0
         with:
           save-config: true
@@ -58,6 +68,7 @@ jobs:
           default-organization-id: ${{ secrets.SCW_DEFAULT_ORGANIZATION_ID }}
 
       - name: Registre privé
+        if: steps.cfg.outputs.ok == 'true'
         id: registry
         run: |
           ID=$(scw -o json registry namespace list name="$REGISTRY_NS" region="$REGION" | jq -r --arg n "$REGISTRY_NS" '[.[] | select(.name==$n)][0].id // empty')
@@ -69,17 +80,21 @@ jobs:
           echo "image=rg.$REGION.scw.cloud/$REGISTRY_NS/$CONTAINER_NAME:$(git rev-parse --short=12 HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Construire l'image
+        if: steps.cfg.outputs.ok == 'true'
         run: docker build -t "${{ steps.registry.outputs.image }}" .
 
       - name: Contrôle de sécurité de l'image (vulnérabilités hautes et critiques corrigeables)
+        if: steps.cfg.outputs.ok == 'true'
         run: |
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image \
             --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress "${{ steps.registry.outputs.image }}"
 
       - name: Pousser l'image
+        if: steps.cfg.outputs.ok == 'true'
         run: docker push "${{ steps.registry.outputs.image }}"
 
       - name: Espace de conteneurs
+        if: steps.cfg.outputs.ok == 'true'
         id: ns
         run: |
           ID=$(scw -o json container namespace list name="$CONTAINER_NS" region="$REGION" | jq -r --arg n "$CONTAINER_NS" '[.[] | select(.name==$n)][0].id // empty')
@@ -96,6 +111,7 @@ jobs:
           echo "id=$ID" >> "$GITHUB_OUTPUT"
 
       - name: Créer ou mettre à jour le conteneur
+        if: steps.cfg.outputs.ok == 'true'
         id: ct
         env:
           IMAGE: ${{ steps.registry.outputs.image }}
@@ -125,6 +141,7 @@ jobs:
           echo "domain=$DOMAIN" >> "$GITHUB_OUTPUT"
 
       - name: Vérifier le déploiement
+        if: steps.cfg.outputs.ok == 'true'
         env:
           URL: ${{ steps.ct.outputs.url }}
           ID: ${{ steps.ct.outputs.id }}

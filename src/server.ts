@@ -8,7 +8,7 @@ import { registerLegifrance } from "./tools/legifrance.js";
 import { registerSirene } from "./tools/sirene.js";
 import { registerStatut } from "./tools/statut.js";
 
-export const VERSION = "0.2.0";
+export const VERSION = "0.2.1";
 
 /** Une instance par connexion stdio ou par requête HTTP, avec les identifiants de l'utilisateur concerné. */
 export function createServer(creds: Credentials): McpServer {
